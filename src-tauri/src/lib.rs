@@ -295,7 +295,9 @@ fn spawn_cloudflared(
             cmd.arg("tunnel")
                 .arg("--no-autoupdate")
                 .arg("--url")
-                .arg(&target);
+                .arg(&target)
+                .arg("--http-host-header")
+                .arg("localhost");
         }
     }
     if let Some(proto) = protocol {
