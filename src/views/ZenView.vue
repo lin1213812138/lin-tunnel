@@ -9,6 +9,7 @@ const message = useMessage()
 const busy = ref(false)
 const zenId = ref('')
 const editing = ref(false)
+const tap = ref(0)
 
 const port = computed({
   get: () => settings.zenPort || 8080,
@@ -58,6 +59,7 @@ onMounted(async () => {
 
 async function onOrb() {
   if (busy.value) return
+  tap.value += 1
   busy.value = true
   try {
     if (url.value) {
@@ -114,6 +116,7 @@ async function onOrb() {
     <div class="zen-stage">
       <div class="zen-power" :class="`zen-power--${status}`">
         <div class="zen-ring"></div>
+        <span v-if="tap" :key="tap" class="zen-ripple" aria-hidden="true"></span>
         <button class="zen-orb" :disabled="busy" @click="onOrb">
           <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z" fill="currentColor" fill-opacity="0.12" />
