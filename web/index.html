@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lin-tunnel</title>
+<style>
+  :root { color-scheme: dark; --bg:#0f1115; --card:#171a21; --line:#262b36; --text:#e6e9ef; --muted:#8b93a3; --accent:#4f9cf9; --ok:#3ddc97; --err:#ff6b6b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 "Segoe UI", "Microsoft YaHei", sans-serif; }
+  header { padding:22px 28px 6px; }
+  h1 { margin:0; font-size:20px; letter-spacing:.5px; }
+  header p { margin:6px 0 0; color:var(--muted); font-size:13px; }
+  main { padding:18px 28px 40px; max-width:980px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:18px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  input { background:#0d0f13; border:1px solid var(--line); color:var(--text); border-radius:8px; padding:9px 11px; font-size:14px; outline:none; }
+  input:focus { border-color:var(--accent); }
+  #name { flex:1 1 220px; } #port { width:120px; }
+  button { background:var(--accent); color:#08111f; border:0; border-radius:8px; padding:9px 16px; font-size:14px; font-weight:600; cursor:pointer; }
+  button.ghost { background:#232936; color:var(--text); font-weight:500; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .tunnel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .tunnel-head { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .tunnel-name { font-weight:600; }
+  .pill { font-size:12px; padding:2px 9px; border-radius:99px; border:1px solid var(--line); color:var(--muted); }
+  .pill.running { color:var(--ok); border-color:#1f5b45; background:#10231c; }
+  .pill.error { color:var(--err); border-color:#5b1f1f; background:#231012; }
+  .pill.starting { color:#f0c36d; border-color:#5b4a1f; background:#231f10; }
+  .url { margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .url a { color:var(--accent); text-decoration:none; word-break:break-all; }
+  .meta { color:var(--muted); font-size:12px; margin-top:8px; }
+  .actions { margin-left:auto; display:flex; gap:8px; }
+  .actions button { padding:6px 12px; font-size:13px; }
+  details { margin-top:10px; } summary { cursor:pointer; color:var(--muted); font-size:12px; }
+  pre { background:#0b0d11; border:1px solid var(--line); border-radius:8px; padding:10px; font-size:12px; color:#aab3c2; white-space:pre-wrap; max-height:220px; overflow:auto; }
+  .hint { color:var(--muted); font-size:12px; margin-top:10px; }
+  .empty { color:var(--muted); text-align:center; padding:24px; }
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#1d2432; border:1px solid var(--line); color:var(--text); padding:9px 16px; border-radius:8px; opacity:0; transition:.2s; pointer-events:none; }
+  .toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>lin-tunnel</h1>
+  <p>把本机服务临时暴露到公网 · 基于官方 cloudflared 快速隧道，无需账号</p>
+</header>
+<main>
+  <section class="panel">
+    <form id="create" class="row">
+      <input id="name" placeholder="名字（可选），例如：本地前端" maxlength="40">
+      <input id="port" type="number" min="1" max="65535" placeholder="本机端口" required>
+      <button type="submit">建立隧道</button>
+      <button type="button" id="refresh" class="ghost">刷新</button>
+    </form>
+    <div class="hint">示例：本机服务跑在 8080，就填 8080；生成后会出现 https://xxx.trycloudflare.com 公网地址。</div>
+  </section>
+  <div id="list"><div class="empty">还没有隧道</div></div>
+</main>
+<div id="toast" class="toast"></div>
+
+<script>
+const listEl = document.getElementById('list');
+const toastEl = document.getElementById('toast');
+let busy = false;
+
+function toast(text) {
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+
+function statusLabel(status) {
+  return { starting: '建立中', running: '运行中', error: '失败', stopped: '已停止' }[status] || status;
+}
+
+function esc(text) {
+  return String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function render(tunnels) {
+  if (!tunnels.length) {
+    listEl.innerHTML = '<div class="empty">还没有隧道</div>';
+    return;
+  }
+  listEl.innerHTML = tunnels.map((t) => `
+    <article class="tunnel">
+      <div class="tunnel-head">
+        <span class="tunnel-name">${esc(t.name)}</span>
+        <span class="pill ${t.status}">${statusLabel(t.status)}</span>
+        <span class="meta">→ http://127.0.0.1:${t.port}</span>
+        <div class="actions">
+          ${t.status === 'running' ? `<button class="ghost" data-copy="${esc(t.url)}">复制地址</button>` : ''}
+          <button class="ghost" data-stop="${t.id}" ${t.status === 'stopped' ? 'disabled' : ''}>停止</button>
+          <button class="ghost" data-remove="${t.id}">删除</button>
+        </div>
+      </div>
+      ${t.url ? `<div class="url"><a href="${esc(t.url)}" target="_blank" rel="noreferrer">${esc(t.url)}</a></div>` : ''}
+      ${t.error ? `<div class="meta" style="color:var(--err)">${esc(t.error)}</div>` : ''}
+      <div class="meta">PID ${t.pid ?? '-'} · 创建于 ${new Date(t.createdAt).toLocaleTimeString()}</div>
+      <details><summary>最近日志</summary><pre>${esc((t.logTail || []).join('\n') || '暂无输出')}</pre></details>
+    </article>`).join('');
+}
+
+async function refresh() {
+  try {
+    const res = await fetch('/api/state');
+    const data = await res.json();
+    if (data.ok) render(data.tunnels);
+  } catch { /* 控制台重启中，忽略 */ }
+}
+
+document.getElementById('create').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (busy) return;
+  const port = Number(document.getElementById('port').value);
+  if (!port) return;
+  busy = true;
+  try {
+    const res = await fetch('/api/tunnels', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ port, name: document.getElementById('name').value }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '创建失败');
+    document.getElementById('port').value = '';
+    document.getElementById('name').value = '';
+    toast('隧道已创建，正在分配公网地址…');
+    await refresh();
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    busy = false;
+  }
+});
+
+listEl.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  if (btn.dataset.copy) {
+    try { await navigator.clipboard.writeText(btn.dataset.copy); toast('已复制公网地址'); }
+    catch { toast('复制失败，请手动选中地址'); }
+  } else if (btn.dataset.stop) {
+    await fetch(`/api/tunnels/${btn.dataset.stop}`, { method: 'POST' });
+    await refresh();
+  } else if (btn.dataset.remove) {
+    await fetch(`/api/tunnels/${btn.dataset.remove}`, { method: 'DELETE' });
+    await refresh();
+  }
+});
+
+document.getElementById('refresh').addEventListener('click', () => { refresh(); toast('已刷新'); });
+refresh();
+setInterval(refresh, 1500);
+</script>
+</body>
+</html>

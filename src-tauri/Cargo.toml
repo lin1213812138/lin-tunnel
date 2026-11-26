@@ -1,0 +1,27 @@
+[package]
+name = "lin-tunnel"
+version = "1.5.0"
+description = "把本机服务发布到公网的桌面客户端（Tauri + Naive UI）"
+authors = ["lin"]
+edition = "2021"
+
+[lib]
+name = "lin_tunnel_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "2", features = ["json"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
