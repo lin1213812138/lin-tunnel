@@ -1133,3 +1133,21 @@ body {
     animation: none !important;
   }
 }
+
+/* 忙碌（连接中 / 断开中）外环的溶血形变：只改圆角，不做位移，圆钮位置保持不变 */
+.zen-power-outer.is-busy {
+  animation: zen-ring-hemolysis 2.1s ease-in-out infinite;
+}
+
+@keyframes zen-ring-hemolysis {
+  0%, 100% { border-radius: 50%; }
+  25% { border-radius: 51% 49% 47% 53% / 53% 47% 49% 51%; }
+  50% { border-radius: 48% 52% 50% 50% / 52% 48% 51% 49%; }
+  75% { border-radius: 53% 47% 52% 48% / 49% 51% 48% 52%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zen-power-outer.is-busy {
+    animation: none !important;
+  }
+}

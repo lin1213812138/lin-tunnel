@@ -11,6 +11,7 @@ const zenId = ref('')
 const editing = ref(false)
 const tap = ref(0)
 const cooldown = ref(0)
+const stopping = ref(false)
 let cooldownTimer = 0
 
 const port = computed({
@@ -27,6 +28,7 @@ const status = computed(() => {
   return zen.value.status
 })
 const caption = computed(() => {
+  if (stopping.value) return '正在断开 · 请稍候'
   if (cooldown.value > 0) return `Cloudflare 限流 · ${cooldown.value}s 后可重试`
   const map = {
     idle: '未连接 · 点一下启动',
@@ -48,6 +50,7 @@ const hint = computed(() => {
 })
 
 const pending = computed(() => status.value === 'starting')
+const isBusy = computed(() => pending.value || stopping.value)
 const orbTitle = computed(() => {
   if (cooldown.value > 0) return `${cooldown.value} 秒后可重试`
   const s = status.value
@@ -109,7 +112,16 @@ async function onOrb() {
   try {
     if (status.value === 'running') {
       if (!zen.value?.id) return
-      await stopTunnel(zen.value.id)
+      stopping.value = true
+      const startedAt = Date.now()
+      try {
+        await stopTunnel(zen.value.id)
+        // 让断开的溶血动效至少完整播一轮，避免一闪而过
+        const rest = 1100 - (Date.now() - startedAt)
+        if (rest > 0) await new Promise((resolve) => setTimeout(resolve, rest))
+      } finally {
+        stopping.value = false
+      }
       message.success('已断开连接')
       return
     }
@@ -167,7 +179,7 @@ async function onOrb() {
     </div>
     <div class="zen-stage">
       <div class="zen-power" :class="`zen-power--${status}`">
-        <div class="zen-lightning" :class="{ 'zen-lightning--active': pending || status === 'running' }" aria-hidden="true">
+        <div class="zen-lightning" :class="{ 'zen-lightning--active': isBusy || status === 'running' }" aria-hidden="true">
           <svg class="zen-lightning-svg" viewBox="0 0 260 260" fill="none">
             <path
               class="zen-lightning-arc"
@@ -189,9 +201,9 @@ async function onOrb() {
         </div>
         <div class="zen-power-shell">
           <div class="zen-power-ring"></div>
-          <div class="zen-power-outer" :class="{ 'is-busy': pending }">
+          <div class="zen-power-outer" :class="{ 'is-busy': isBusy }">
             <button class="zen-orb" :disabled="busy || pending || cooldown > 0" :title="orbTitle" @click="onOrb">
-              <span class="zen-face" :class="{ 'is-busy': pending }">
+              <span class="zen-face" :class="{ 'is-busy': isBusy }">
                 <span class="zen-blob zen-blob--a"></span>
                 <span class="zen-blob zen-blob--b"></span>
                 <span class="zen-blob zen-blob--c"></span>
