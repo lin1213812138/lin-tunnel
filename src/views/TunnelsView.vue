@@ -119,7 +119,6 @@ async function act(tunnel, kind) {
   try {
     if (kind === 'stop') await stopTunnel(tunnel.id)
     if (kind === 'restart') await restartTunnel(tunnel.id)
-    if (kind === 'pause') await pauseTunnel(tunnel.id)
     if (kind === 'resume') await resumeTunnel(tunnel.id)
     if (kind === 'remove') await removeTunnel(tunnel.id)
     const tips = {
@@ -265,7 +264,6 @@ function goZen() {
 }
 
 function moreOptions(tunnel) {
-  const active = tunnel.paused || tunnel.status === 'running' || tunnel.status === 'starting'
   return [
     { label: '复制地址', key: 'copy', disabled: !tunnel.url },
     { label: '二维码', key: 'qr', disabled: !tunnel.url || tunnel.paused },
@@ -273,7 +271,6 @@ function moreOptions(tunnel) {
     { label: '线路测速', key: 'bench', disabled: tunnel.status !== 'running' || tunnel.paused },
     { label: '修改', key: 'edit' },
     { type: 'divider', key: 'd1' },
-    { label: '停止', key: 'stop', disabled: !active },
     { label: '删除', key: 'remove' },
   ]
 }
@@ -284,7 +281,6 @@ function onMore(tunnel, key) {
   else if (key === 'logs') openLogs(tunnel)
   else if (key === 'bench') runBench(tunnel)
   else if (key === 'edit') openEdit(tunnel)
-  else if (key === 'stop') act(tunnel, 'stop')
   else if (key === 'remove') act(tunnel, 'remove')
 }
 
@@ -372,12 +368,12 @@ function timeText(iso) {
                   @click="act(tunnel, 'resume')"
                 >继续</n-button>
                 <n-button
-                  v-else-if="tunnel.status === 'running' || tunnel.status === 'starting'"
+                  v-if="tunnel.paused || tunnel.status === 'running' || tunnel.status === 'starting'"
                   size="tiny"
                   quaternary
-                  :loading="busy === `${tunnel.id}:pause`"
-                  @click="act(tunnel, 'pause')"
-                >暂停</n-button>
+                  :loading="busy === `${tunnel.id}:stop`"
+                  @click="act(tunnel, 'stop')"
+                >停止</n-button>
 
                 <n-button
                   v-if="tunnel.status === 'stopped' || tunnel.status === 'error'"
