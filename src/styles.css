@@ -1151,3 +1151,55 @@ body {
     animation: none !important;
   }
 }
+
+/* ── 视图切换按钮的自绘 tooltip（不依赖系统 title，悬停立即显示） ── */
+.zen-switch {
+  position: relative;
+}
+
+.zen-switch::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translate(-50%, -4px);
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: rgba(17, 24, 39, 0.94);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 30;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+}
+
+.zen-switch::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: rgba(17, 24, 39, 0.94);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 30;
+  transition: opacity 0.15s, visibility 0.15s;
+}
+
+.zen-switch:hover::after,
+.zen-switch:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.zen-switch:hover::after {
+  transform: translate(-50%, 0);
+}

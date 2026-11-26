@@ -303,7 +303,7 @@ function timeText(iso) {
       <div>
         <div class="zen-title-row">
           <h2 class="page-title">隧道管理</h2>
-          <button class="zen-switch" title="切换至禅模式" @click="goZen">
+          <button class="zen-switch" data-tip="切换至禅模式" aria-label="切换至禅模式" @click="goZen">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none">
               <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z" />
             </svg>
