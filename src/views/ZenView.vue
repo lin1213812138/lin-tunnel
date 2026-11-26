@@ -205,7 +205,7 @@ async function onOrb() {
         <span v-if="tap" :key="tap" class="zen-ripple" aria-hidden="true"></span>
       </div>
       <p class="zen-caption">{{ caption }}</p>
-      <div v-if="url" class="zen-url" title="点击复制" @click="copyUrl">{{ url }}</div>
+      <div class="zen-url" :class="{ 'zen-url--empty': !url }" :title="url ? '点击复制' : ''" @click="copyUrl">{{ url }}</div>
 
       <button class="zen-chip" title="修改本地端口" @click="editing = !editing">
         <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">

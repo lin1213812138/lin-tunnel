@@ -592,6 +592,8 @@ body {
 
 .zen-url {
   margin-top: 6px;
+  min-height: 20px;
+  line-height: 20px;
   font-family: 'Cascadia Code', Consolas, monospace;
   font-size: 13px;
   color: #4f46e5;
@@ -601,6 +603,10 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.zen-url--empty {
+  cursor: default;
 }
 
 .zen-info {
