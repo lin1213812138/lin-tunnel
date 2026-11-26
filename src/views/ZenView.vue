@@ -167,7 +167,7 @@ async function onOrb() {
       <div class="zen-header-text">
         <div class="zen-title-row">
           <h2 class="page-title">禅模式</h2>
-          <button class="zen-switch" title="返回隧道管理" @click="emit('close')">
+          <button class="zen-switch" title="切换至隧道管理" @click="emit('close')">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 10h12M4 10l3-3M4 10l3 3M16 4v12M13 16l3-3M13 16l3 3" />
             </svg>
