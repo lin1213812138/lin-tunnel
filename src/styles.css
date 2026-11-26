@@ -123,6 +123,7 @@ body {
 .page-head {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 16px;
   margin-bottom: 22px;
 }
@@ -130,6 +131,8 @@ body {
 .page-actions {
   display: flex;
   gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .page-title {
