@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useMessage } from 'naive-ui'
 import { state, settings, refreshTunnels } from '../store'
 import { startTunnel, resumeTunnel, restartTunnel, stopTunnel } from '../api'
@@ -10,6 +10,8 @@ const busy = ref(false)
 const zenId = ref('')
 const editing = ref(false)
 const tap = ref(0)
+const cooldown = ref(0)
+let cooldownTimer = 0
 
 const port = computed({
   get: () => settings.zenPort || 8080,
@@ -25,6 +27,7 @@ const status = computed(() => {
   return zen.value.status
 })
 const caption = computed(() => {
+  if (cooldown.value > 0) return `Cloudflare 限流 · ${cooldown.value}s 后可重试`
   const map = {
     idle: '未连接 · 点一下启动',
     stopped: '已断开 · 点一下启动',
@@ -37,6 +40,7 @@ const caption = computed(() => {
 })
 const url = computed(() => (status.value === 'running' ? zen.value?.url || '' : ''))
 const hint = computed(() => {
+  if (cooldown.value > 0) return '免费临时域名申请被 Cloudflare 限流，冷却结束后按钮自动恢复'
   if (url.value) return '点一下公网地址即可复制'
   if (status.value === 'paused') return '隧道已暂停，点圆形按钮恢复'
   if (status.value === 'error') return zen.value?.error || '连接失败，点圆形按钮重试'
@@ -45,12 +49,34 @@ const hint = computed(() => {
 
 const pending = computed(() => status.value === 'starting')
 const orbTitle = computed(() => {
+  if (cooldown.value > 0) return `${cooldown.value} 秒后可重试`
   const s = status.value
   if (s === 'starting') return '正在连接'
   if (s === 'running') return '断开连接'
   if (s === 'paused') return '恢复连接'
   return '启动连接'
 })
+
+function startCooldown(seconds = 60) {
+  cooldown.value = seconds
+  clearInterval(cooldownTimer)
+  cooldownTimer = setInterval(() => {
+    cooldown.value -= 1
+    if (cooldown.value <= 0) {
+      cooldown.value = 0
+      clearInterval(cooldownTimer)
+    }
+  }, 1000)
+}
+
+watch(
+  () => zen.value?.error,
+  (err) => {
+    if (err && /429|too many requests/i.test(String(err))) startCooldown(60)
+  },
+)
+
+onBeforeUnmount(() => clearInterval(cooldownTimer))
 
 async function copyUrl() {
   if (!url.value) return
@@ -105,7 +131,13 @@ async function onOrb() {
     })
     if (created?.id) zenId.value = created.id
   } catch (e) {
-    message.error(String(e?.message || e))
+    const text = String(e?.message || e)
+    if (/429|too many requests/i.test(text)) {
+      startCooldown(60)
+      message.error('Cloudflare 限流：临时域名申请太频繁，冷却结束后可重试')
+    } else {
+      message.error(text)
+    }
   } finally {
     busy.value = false
     try {
@@ -158,7 +190,7 @@ async function onOrb() {
         <div class="zen-power-shell">
           <div class="zen-power-ring"></div>
           <div class="zen-power-outer" :class="{ 'is-busy': pending }">
-            <button class="zen-orb" :disabled="busy || pending" :title="orbTitle" @click="onOrb">
+            <button class="zen-orb" :disabled="busy || pending || cooldown > 0" :title="orbTitle" @click="onOrb">
               <span class="zen-face" :class="{ 'is-busy': pending }">
                 <span class="zen-blob zen-blob--a"></span>
                 <span class="zen-blob zen-blob--b"></span>
