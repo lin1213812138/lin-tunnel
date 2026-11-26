@@ -368,23 +368,24 @@ function timeText(iso) {
                   @click="act(tunnel, 'resume')"
                 >继续</n-button>
                 <n-button
-                  v-if="tunnel.paused || tunnel.status === 'running' || tunnel.status === 'starting'"
                   size="tiny"
                   quaternary
+                  type="primary"
+                  :disabled="tunnel.status !== 'stopped' && tunnel.status !== 'error'"
+                  :loading="busy === `${tunnel.id}:restart`"
+                  @click="act(tunnel, 'restart')"
+                >{{ tunnel.error ? '重试' : '启动' }}</n-button>
+
+                <n-button
+                  size="tiny"
+                  quaternary
+                  :disabled="!(tunnel.paused || tunnel.status === 'running' || tunnel.status === 'starting')"
                   :loading="busy === `${tunnel.id}:stop`"
                   @click="act(tunnel, 'stop')"
                 >停止</n-button>
 
                 <n-button
-                  v-if="tunnel.status === 'stopped' || tunnel.status === 'error'"
-                  size="tiny"
-                  quaternary
-                  type="primary"
-                  :loading="busy === `${tunnel.id}:restart`"
-                  @click="act(tunnel, 'restart')"
-                >{{ tunnel.error ? '重试' : '启动' }}</n-button>
-                <n-button
-                  v-else-if="canRestart(tunnel)"
+                  v-if="tunnel.status === 'running' || tunnel.status === 'starting' || tunnel.paused"
                   size="tiny"
                   quaternary
                   :loading="busy === `${tunnel.id}:restart`"
