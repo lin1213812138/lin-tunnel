@@ -26,6 +26,7 @@ const pages = [
 
 const page = ref('tunnels')
 const navPages = computed(() => pages.filter((p) => !p.hidden))
+const activeKey = computed(() => (page.value === 'zen' ? 'tunnels' : page.value))
 const current = computed(() => pages.find((p) => p.key === page.value) || pages[0])
 const theme = computed(() => (settings.theme === 'light' ? lightTheme : darkTheme))
 
@@ -71,7 +72,7 @@ onMounted(() => {
               v-for="item in navPages"
               :key="item.key"
               class="nav-item"
-              :class="{ active: page === item.key }"
+              :class="{ active: activeKey === item.key }"
               @click="select(item.key)"
             >
               <span class="nav-icon">
