@@ -17,7 +17,7 @@ import AboutView from './views/AboutView.vue'
 const version = __APP_VERSION__
 
 const pages = [
-  { key: 'zen', label: '禅模式', comp: ZenView, icon: 'M11 2 5 12h5l-1 6 6-10h-5l1-6' },
+  { key: 'zen', label: '禅模式', hidden: true, comp: ZenView, icon: 'M11 2 5 12h5l-1 6 6-10h-5l1-6' },
   { key: 'tunnels', label: '隧道管理', comp: TunnelsView, icon: 'M4 8h12l-3-3M16 12H4l3 3' },
   { key: 'logs', label: '运行日志', comp: LogsView, icon: 'M4 5h12M4 9h12M4 13h8M4 17h10' },
   { key: 'settings', label: '设置', comp: SettingsView, icon: 'M10 7.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6M10 2v2M10 16v2M2 10h2M16 10h2' },
@@ -25,6 +25,7 @@ const pages = [
 ]
 
 const page = ref('tunnels')
+const navPages = computed(() => pages.filter((p) => !p.hidden))
 const current = computed(() => pages.find((p) => p.key === page.value) || pages[0])
 const theme = computed(() => (settings.theme === 'light' ? lightTheme : darkTheme))
 
@@ -67,7 +68,7 @@ onMounted(() => {
               <div class="brand-name">Lin Tunnel</div>
             </div>
             <div
-              v-for="item in pages"
+              v-for="item in navPages"
               :key="item.key"
               class="nav-item"
               :class="{ active: page === item.key }"
