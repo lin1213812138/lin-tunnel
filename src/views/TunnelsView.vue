@@ -357,8 +357,6 @@ function timeText(iso) {
             <td class="cell-sub">{{ timeText(tunnel.createdAt) }}</td>
             <td>
               <div class="row-actions">
-                <n-button v-if="tunnel.url && !tunnel.paused" size="tiny" quaternary @click="onOpen(tunnel.url)">打开</n-button>
-
                 <n-button
                   v-if="tunnel.paused"
                   size="tiny"
@@ -384,13 +382,7 @@ function timeText(iso) {
                   @click="act(tunnel, 'stop')"
                 >停止</n-button>
 
-                <n-button
-                  v-if="tunnel.status === 'running' || tunnel.status === 'starting' || tunnel.paused"
-                  size="tiny"
-                  quaternary
-                  :loading="busy === `${tunnel.id}:restart`"
-                  @click="act(tunnel, 'restart')"
-                >重启</n-button>
+
 
                 <n-dropdown
                   trigger="click"
