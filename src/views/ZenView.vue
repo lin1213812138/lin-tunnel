@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useMessage } from 'naive-ui'
 import { state, settings, refreshTunnels } from '../store'
-import { startTunnel, resumeTunnel, restartTunnel } from '../api'
+import { startTunnel, resumeTunnel, restartTunnel, stopTunnel } from '../api'
 
 const emit = defineEmits(['close'])
 const message = useMessage()
@@ -26,22 +26,41 @@ const status = computed(() => {
 })
 const caption = computed(() => {
   const map = {
-    idle: '已停止',
-    stopped: '已停止',
-    error: '连接失败',
-    starting: '正在连接',
-    running: '运行中',
-    paused: '已暂停',
+    idle: '未连接 · 点一下启动',
+    stopped: '已断开 · 点一下启动',
+    error: '连接失败 · 点一下重试',
+    starting: '正在连接 · 请稍候',
+    running: '已连接 · 点一下断开',
+    paused: '已暂停 · 点一下恢复',
   }
-  return `${map[status.value] || '已停止'} · 闪电连接`
+  return map[status.value] || '未连接 · 点一下启动'
 })
 const url = computed(() => (status.value === 'running' ? zen.value?.url || '' : ''))
 const hint = computed(() => {
-  if (url.value) return '再点一次圆形按钮即可复制公网地址'
+  if (url.value) return '点一下公网地址即可复制'
   if (status.value === 'paused') return '隧道已暂停，点圆形按钮恢复'
   if (status.value === 'error') return zen.value?.error || '连接失败，点圆形按钮重试'
   return '点击圆形按钮，系统会自动选择域名并生成子域名，无需手动配置'
 })
+
+const pending = computed(() => status.value === 'starting')
+const orbTitle = computed(() => {
+  const s = status.value
+  if (s === 'starting') return '正在连接'
+  if (s === 'running') return '断开连接'
+  if (s === 'paused') return '恢复连接'
+  return '启动连接'
+})
+
+async function copyUrl() {
+  if (!url.value) return
+  try {
+    await navigator.clipboard.writeText(url.value)
+    message.success('公网地址已复制')
+  } catch {
+    message.error('复制失败，请手动选择地址')
+  }
+}
 
 onMounted(async () => {
   try {
@@ -62,9 +81,10 @@ async function onOrb() {
   tap.value += 1
   busy.value = true
   try {
-    if (url.value) {
-      await navigator.clipboard.writeText(url.value)
-      message.success('公网地址已复制')
+    if (status.value === 'running') {
+      if (!zen.value?.id) return
+      await stopTunnel(zen.value.id)
+      message.success('已断开连接')
       return
     }
     if (zen.value?.paused) {
@@ -115,16 +135,45 @@ async function onOrb() {
     </div>
     <div class="zen-stage">
       <div class="zen-power" :class="`zen-power--${status}`">
-        <div class="zen-ring"></div>
-        <span v-if="tap" :key="tap" class="zen-ripple" aria-hidden="true"></span>
-        <button class="zen-orb" :disabled="busy" @click="onOrb">
-          <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z" fill="currentColor" fill-opacity="0.12" />
+        <div class="zen-lightning" :class="{ 'zen-lightning--active': pending || status === 'running' }" aria-hidden="true">
+          <svg class="zen-lightning-svg" viewBox="0 0 260 260" fill="none">
+            <path
+              class="zen-lightning-arc"
+              d="M130 18C96 66 168 96 128 144C100 178 132 200 130 242"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-dasharray="9 13"
+            />
+            <path
+              class="zen-lightning-arc zen-lightning-arc--right"
+              d="M130 18C164 66 92 96 132 144C160 178 128 200 130 242"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-dasharray="9 13"
+            />
           </svg>
-        </button>
+        </div>
+        <div class="zen-power-shell">
+          <div class="zen-power-ring"></div>
+          <div class="zen-power-outer" :class="{ 'is-busy': pending }">
+            <button class="zen-orb" :disabled="busy || pending" :title="orbTitle" @click="onOrb">
+              <span class="zen-face" :class="{ 'is-busy': pending }">
+                <span class="zen-blob zen-blob--a"></span>
+                <span class="zen-blob zen-blob--b"></span>
+                <span class="zen-blob zen-blob--c"></span>
+                <svg class="zen-bolt" width="64" height="64" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+        <span v-if="tap" :key="tap" class="zen-ripple" aria-hidden="true"></span>
       </div>
       <p class="zen-caption">{{ caption }}</p>
-      <div v-if="url" class="zen-url" title="点击复制" @click="onOrb">{{ url }}</div>
+      <div v-if="url" class="zen-url" title="点击复制" @click="copyUrl">{{ url }}</div>
 
       <button class="zen-chip" title="修改本地端口" @click="editing = !editing">
         <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">

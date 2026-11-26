@@ -778,3 +778,352 @@ body {
     transition: none;
   }
 }
+
+/* ── 禅模式圆钮 v2：玻璃分层 + 溶血形变 + 闪电弧（对齐 X Tunnel 视觉语言） ── */
+.zen-power {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  --zen-accent: #6366f1;
+  --zen-face-a: #8f7af4;
+  --zen-face-b: #6366f1;
+  --zen-face-c: #4f46e5;
+  --zen-glow: rgba(99, 102, 241, 0.35);
+}
+
+.zen-power::before { content: none; }
+
+.zen-power--starting {
+  --zen-accent: #f59e0b; --zen-face-a: #fcd34d; --zen-face-b: #f59e0b; --zen-face-c: #d97706;
+  --zen-glow: rgba(245, 158, 11, 0.42);
+}
+.zen-power--running {
+  --zen-accent: #10b981; --zen-face-a: #6ee7b7; --zen-face-b: #10b981; --zen-face-c: #059669;
+  --zen-glow: rgba(16, 185, 129, 0.45);
+}
+.zen-power--error {
+  --zen-accent: #ef4444; --zen-face-a: #fca5a5; --zen-face-b: #ef4444; --zen-face-c: #dc2626;
+  --zen-glow: rgba(239, 68, 68, 0.42);
+}
+.zen-power--paused {
+  --zen-accent: #818cf8; --zen-face-a: #c7d2fe; --zen-face-b: #818cf8; --zen-face-c: #6366f1;
+  --zen-glow: rgba(129, 140, 248, 0.35);
+}
+
+/* 260 玻璃底盘 */
+.zen-power-shell {
+  position: relative;
+  z-index: 2;
+  width: 260px;
+  height: 260px;
+  display: grid;
+  place-items: center;
+}
+
+.zen-power-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.66),
+    rgba(255, 255, 255, 0.16) 45%,
+    rgba(99, 102, 241, 0.08) 72%,
+    rgba(255, 255, 255, 0.34)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  box-shadow:
+    rgba(99, 102, 241, 0.1) 0 0 0 1px,
+    rgba(255, 255, 255, 0.55) 0 1px 0 0 inset;
+  backdrop-filter: blur(14px) saturate(160%);
+  transition: background 0.4s, box-shadow 0.4s, border-color 0.4s;
+}
+
+.zen-power-ring::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1px dashed rgba(99, 102, 241, 0.22);
+  opacity: 0.7;
+}
+
+/* 196 玻璃外环 */
+.zen-power-outer {
+  position: relative;
+  z-index: 2;
+  width: 196px;
+  height: 196px;
+  padding: 13px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.76),
+    rgba(255, 255, 255, 0.18) 42%,
+    rgba(99, 102, 241, 0.1) 72%,
+    rgba(255, 255, 255, 0.44)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  box-shadow:
+    rgba(99, 102, 241, 0.22) 0 14px 36px,
+    rgba(255, 255, 255, 0.85) 0 1px 1px 0 inset;
+  backdrop-filter: blur(22px) saturate(180%);
+  transition: border-radius 0.4s, box-shadow 0.4s;
+}
+
+.zen-power-outer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 210deg,
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0.05),
+    rgba(105, 78, 241, 0.14),
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.42) 320deg,
+    rgba(255, 255, 255, 0.55) 360deg
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.zen-power-outer::after {
+  content: '';
+  position: absolute;
+  top: -18%;
+  left: -22%;
+  width: 72%;
+  height: 58%;
+  border-radius: 50%;
+  background: radial-gradient(rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.18) 42%, transparent 72%);
+  filter: blur(2px);
+  animation: zen-glass-shimmer 5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 170 球面 */
+.zen-orb {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform 0.18s;
+}
+
+.zen-orb:hover:not(:disabled) {
+  transform: scale(1.015);
+  box-shadow: none;
+  background: transparent;
+}
+
+.zen-orb:active:not(:disabled) {
+  transform: scale(0.985);
+  box-shadow: none;
+  transition: transform 0.07s ease;
+}
+
+.zen-orb:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.85);
+}
+
+.zen-power--running .zen-orb,
+.zen-power--paused .zen-orb,
+.zen-power--error .zen-orb {
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+
+.zen-face {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #fff;
+  background: radial-gradient(circle at 34% 28%, var(--zen-face-a) 0%, var(--zen-face-b) 46%, var(--zen-face-c) 100%);
+  box-shadow:
+    rgba(255, 255, 255, 0.4) 0 3px 14px 0 inset,
+    rgba(0, 0, 0, 0.25) 0 -10px 20px 0 inset,
+    var(--zen-glow) 0 10px 28px -2px;
+  transition: background 0.35s, box-shadow 0.35s, border-radius 0.3s;
+}
+
+.zen-face.is-busy {
+  animation: zen-face-hemolysis 1.9s ease-in-out infinite;
+  overflow: visible;
+}
+
+.zen-face.is-busy::after {
+  content: '';
+  position: absolute;
+  inset: -3%;
+  border-radius: inherit;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  animation: zen-membrane-rupture 1.9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.zen-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: soft-light;
+}
+
+.zen-face.is-busy .zen-blob { opacity: 0.75; }
+
+.zen-blob--a {
+  width: 52%; height: 52%; left: 6%; top: 16%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.62), transparent 68%);
+  animation: zen-blob-a 1.9s ease-in-out infinite;
+}
+.zen-blob--b {
+  width: 44%; height: 44%; right: 8%; top: 34%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 70%);
+  animation: zen-blob-b 1.6s ease-in-out infinite;
+}
+.zen-blob--c {
+  width: 38%; height: 38%; left: 32%; bottom: 10%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.5), transparent 70%);
+  animation: zen-blob-c 1.4s ease-in-out infinite;
+}
+
+.zen-bolt {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.zen-face.is-busy .zen-bolt { animation: zen-symbol-pulse 1.6s ease-in-out infinite; }
+
+.zen-orb:hover:not(:disabled) .zen-bolt { transform: scale(1.07) rotate(-3deg); }
+
+/* 闪电弧 */
+.zen-lightning {
+  position: absolute;
+  inset: -12px;
+  z-index: 0;
+  color: var(--zen-accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 30%, #000 47%);
+  mask-image: radial-gradient(circle at 50% 50%, transparent 30%, #000 47%);
+}
+
+.zen-lightning--active { opacity: 0.9; }
+
+.zen-lightning-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.zen-lightning-arc {
+  opacity: 0.75;
+  animation: zen-arc-flow 3.2s linear infinite;
+}
+
+.zen-lightning-arc--right { animation-direction: reverse; }
+
+.zen-power--running .zen-lightning-arc { animation-duration: 1.8s; }
+
+/* 点击冲击环 */
+.zen-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 196px;
+  height: 196px;
+  margin: -98px 0 0 -98px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  z-index: 4;
+  animation: zen-tap 0.62s ease-out forwards;
+}
+
+.zen-url { cursor: pointer; }
+
+@keyframes zen-glass-shimmer {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
+  50% { transform: translate(10%, 8%) rotate(6deg); opacity: 0.95; }
+}
+
+@keyframes zen-face-hemolysis {
+  0%, 100% { border-radius: 63% 37% 58% 42% / 41% 59% 39% 61%; transform: scale(1.04, 0.96) rotate(-3deg); filter: saturate(1.2) brightness(1.05); }
+  20% { border-radius: 38% 62% 44% 56% / 64% 36% 61% 39%; transform: scale(0.94, 1.07) rotate(4deg); }
+  40% { border-radius: 55% 45% 36% 64% / 48% 52% 63% 37%; transform: scale(1.06, 0.93) rotate(-5deg); }
+  60% { border-radius: 42% 58% 62% 38% / 57% 43% 40% 60%; transform: scale(0.97, 1.05) rotate(3deg); }
+  80% { border-radius: 61% 39% 47% 53% / 38% 62% 58% 42%; transform: scale(1.05, 0.95) rotate(-4deg); }
+}
+
+@keyframes zen-membrane-rupture {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  35% { transform: scale(1.12, 0.9); opacity: 0.85; }
+  70% { transform: scale(0.9, 1.1); opacity: 0.4; }
+}
+
+@keyframes zen-blob-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(18%, 12%) scale(1.25); }
+}
+
+@keyframes zen-blob-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-16%, -14%) scale(1.2); }
+}
+
+@keyframes zen-blob-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(12%, -18%) scale(1.3); }
+}
+
+@keyframes zen-symbol-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.94); opacity: 0.65; }
+}
+
+@keyframes zen-arc-flow {
+  to { stroke-dashoffset: -48; }
+}
+
+@keyframes zen-tap {
+  0% { transform: scale(0.62); opacity: 0.9; border-color: rgba(255, 255, 255, 0.95); }
+  100% { transform: scale(1.9); opacity: 0; border-color: rgba(255, 255, 255, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zen-power-outer::after,
+  .zen-face.is-busy,
+  .zen-face.is-busy::after,
+  .zen-blob,
+  .zen-bolt,
+  .zen-lightning-arc,
+  .zen-ripple {
+    animation: none !important;
+  }
+}
